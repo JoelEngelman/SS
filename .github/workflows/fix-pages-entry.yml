@@ -1,0 +1,76 @@
+name: Fix Survival Skies Pages entry
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-entry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Move modular source into a real folder
+        shell: bash
+        run: |
+          set -e
+          if [ -d "index.html" ] && [ ! -d "survival-skies" ]; then
+            git mv index.html survival-skies
+          fi
+
+          cat > index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>Survival Skies</title>
+            <link rel="stylesheet" href="survival-skies/css/01-base.css">
+            <link rel="stylesheet" href="survival-skies/css/02-cutscenes.css">
+            <link rel="stylesheet" href="survival-skies/css/03-underground.css">
+          </head>
+          <body>
+            <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#071116;color:#eefbf5;font:700 14px system-ui;letter-spacing:.08em">LOADING SURVIVAL SKIES…</div>
+            <script>
+            (async()=>{
+              try{
+                const response=await fetch('survival-skies/document/body.html');
+                if(!response.ok) throw new Error('Could not load game document: '+response.status);
+                const source=await response.text();
+                const match=source.match(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/i);
+                const markup=source.replace(/<script(?:\\s[^>]*)?>[\\s\\S]*?<\\/script>/gi,'');
+                const template=document.createElement('template');
+                template.innerHTML=markup;
+                document.body.appendChild(template.content);
+                document.getElementById('boot')?.remove();
+                if(!match) throw new Error('Game script was not found in document/body.html');
+                const script=document.createElement('script');
+                script.textContent=match[1];
+                document.body.appendChild(script);
+              }catch(error){
+                console.error(error);
+                document.getElementById('boot').textContent='SURVIVAL SKIES FAILED TO LOAD — OPEN THE BROWSER CONSOLE FOR DETAILS.';
+              }
+            })();
+            </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Commit Pages fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes needed."
+          else
+            git commit -m "Fix GitHub Pages game entry point [skip ci]"
+            git push
+          fi
