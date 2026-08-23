@@ -14,9 +14,16 @@
 (async()=>{
   const target=document.getElementById('survival-skies-body');
   try{
-    const response=await fetch('document/body-clean.html');
+    const response=await fetch('document/body.html', {cache:'no-store'});
     if(!response.ok) throw new Error('Could not load game body');
-    target.outerHTML=await response.text();
+
+    // body.html is the original source body. It still contains its old
+    // inline <script>, so remove those scripts before inserting the HTML.
+    const source=await response.text();
+    const parsed=new DOMParser().parseFromString(source,'text/html');
+    parsed.querySelectorAll('script').forEach(s=>s.remove());
+    target.outerHTML=parsed.body.innerHTML;
+
     const scripts=[
       'js/01-hud.js','js/02-input.js','js/03-game-state.js','js/04-player.js',
       'js/05-surface-level.js','js/06-underground-level.js','js/07-grapple-anchors.js',
@@ -30,6 +37,7 @@
       'js/30-advance-cutscene.js','js/31-end-transmitter.js','js/32-cave-trap.js',
       'js/33-game-start.js'
     ];
+
     for(const src of scripts){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
