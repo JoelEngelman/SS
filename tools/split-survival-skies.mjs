@@ -3,7 +3,9 @@ import path from "node:path";
 
 const sourceUrl = "https://raw.githubusercontent.com/JoelEngelman/Survival-Skies/main/index.html";
 const root = process.cwd();
-const out = path.join(root, "index.html");
+// The runnable Pages entry point is the root index.html. The modular source
+// must therefore live in a normal directory, not in a directory named index.html.
+const out = path.join(root, "survival-skies");
 
 const response = await fetch(sourceUrl);
 if (!response.ok) throw new Error(`Could not fetch Survival Skies index.html: ${response.status}`);
@@ -27,7 +29,6 @@ const write = (file, content) => {
   fs.writeFileSync(target, content.trimEnd() + "\n", "utf8");
 };
 
-// Keep the original document structure as source fragments.
 write(
   "document/head.html",
   `<!doctype html>
@@ -41,7 +42,6 @@ write(
 write("document/body.html", body[1]);
 write("document/footer.html", "</html>");
 
-// Split CSS at the existing responsibility markers.
 const css = style[1];
 const cssSections = [
   ["01-base.css", css.split("/* CUTSCENES */")[0]],
@@ -60,8 +60,6 @@ for (const [file, content] of cssSections) {
   if (content.trim()) write(`css/${file}`, content);
 }
 
-// Split JavaScript at the game's existing section headers.
-// This preserves the original execution order and avoids rewriting game logic.
 const js = script[1];
 const header = /\/\*\s*=+\s*\n\s*([^\n*]+?)\s*\n\s*=+\s*\*\//g;
 const matches = [...js.matchAll(header)];
@@ -109,4 +107,4 @@ The CSS and document fragments preserve the source content rather than rewriting
 `
 );
 
-console.log("Survival Skies modular source generated in index.html/");
+console.log("Survival Skies modular source generated in survival-skies/");
