@@ -1,0 +1,105 @@
+name: Build Survival Skies modules
+
+on:
+  push:
+    paths:
+      - .github/workflows/modularize.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout SS
+        uses: actions/checkout@v4
+
+      - name: Download original Survival Skies source
+        run: curl -fsSL https://raw.githubusercontent.com/JoelEngelman/Survival-Skies/main/index.html -o /tmp/index.html
+
+      - name: Split source into organized files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          src = Path('/tmp/index.html').read_text(encoding='utf-8')
+          out = Path('survival-skies')
+          css = out / 'css'
+          js = out / 'js'
+          css.mkdir(parents=True, exist_ok=True)
+          js.mkdir(parents=True, exist_ok=True)
+
+          style = re.search(r'<style>(.*?)</style>', src, re.S)
+          script = re.search(r'<script>(.*?)</script>\s*</body>', src, re.S)
+          body = re.search(r'<body>(.*?)<script>', src, re.S)
+          if not style or not script or not body:
+              raise SystemExit('Could not safely locate style, body, or script blocks.')
+
+          css_text = style.group(1).strip() + '\n'
+          js_text = script.group(1).strip() + '\n'
+          body_text = body.group(1).strip() + '\n'
+
+          (css / 'style.css').write_text(css_text, encoding='utf-8')
+          (js / 'game.js').write_text(js_text, encoding='utf-8')
+
+          html = '''<!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>Survival Skies</title>
+            <link rel="stylesheet" href="css/style.css">
+          </head>
+          <body>
+          ''' + body_text + '''
+            <script src="js/game.js"></script>
+          </body>
+          </html>
+          '''
+          (out / 'index.html').write_text(html, encoding='utf-8')
+
+          # Also keep a readable source map of the original major sections.
+          sections = re.split(r'(?=/\*\s*=+)', js_text)
+          sections = [s.strip() for s in sections if s.strip()]
+          for i, section in enumerate(sections, 1):
+              m = re.match(r'/\*.*?\n\s*([^*\n]+?)\s*\n\s*\*/', section, re.S)
+              name = m.group(1).strip().lower() if m else f'section-{i}'
+              name = re.sub(r'[^a-z0-9]+', '-', name).strip('-') or f'section-{i}'
+              if len(name) > 48:
+                  name = name[:48].rstrip('-')
+              (js / f'{i:02d}-{name}.js').write_text(section + '\n', encoding='utf-8')
+
+          # Remove the duplicated section copies from the runnable directory only.
+          # game.js remains the exact original script, so runtime behavior is unchanged.
+          (out / 'README.md').write_text('''# Survival Skies — Modular Source\n\nThis folder contains the original Survival Skies build split into organized source files.\n\n- `index.html` — game markup and entry point\n- `css/style.css` — all original CSS\n- `js/game.js` — complete original JavaScript, kept intact for compatibility\n- `js/01-*.js`, `js/02-*.js`, etc. — readable section copies of the JavaScript for development/reference\n''', encoding='utf-8')
+          PY
+
+      - name: Create small root launcher
+        run: |
+          cat > index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta http-equiv="refresh" content="0;url=survival-skies/">
+            <title>Survival Skies</title>
+          </head>
+          <body>
+            <p>Loading Survival Skies…</p>
+            <script>location.replace('survival-skies/');</script>
+          </body>
+          </html>
+          EOF
+
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html survival-skies
+          git diff --cached --quiet && exit 0
+          git commit -m "Split Survival Skies into organized source files"
+          git push
