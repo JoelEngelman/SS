@@ -14,7 +14,7 @@
 (async()=>{
   const target=document.getElementById('survival-skies-body');
   try{
-    const response=await fetch('document/body.html');
+    const response=await fetch('document/body-clean.html');
     if(!response.ok) throw new Error('Could not load game body');
     target.outerHTML=await response.text();
     const scripts=[
