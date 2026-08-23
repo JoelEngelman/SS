@@ -1,0 +1,117 @@
+/* CUTSCENES */
+
+.cutscene{
+  position:fixed;
+  inset:0;
+  z-index:80;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0 18px 7vh;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(90,180,150,.15),
+      rgba(2,7,10,.97) 70%
+    );
+  opacity:0;
+  pointer-events:none;
+  transition:.7s
+}
+
+.cutscene.show{
+  opacity:1;
+  pointer-events:auto
+}
+
+.tower{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  height:72vh;
+  width:150px;
+  border-left:5px solid rgba(150,180,175,.25);
+  border-right:5px solid rgba(150,180,175,.25);
+  background:repeating-linear-gradient(
+    0deg,
+    transparent 0 65px,
+    rgba(160,190,183,.14) 66px 70px
+  )
+}
+
+.glow{
+  position:absolute;
+  left:50%;
+  top:31%;
+  width:300px;
+  height:300px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(
+    circle,
+    rgba(185,239,200,.3),
+    transparent 68%
+  );
+  animation:pulse 2.4s infinite
+}
+
+.person{
+  position:absolute;
+  bottom:0;
+  width:125px;
+  height:250px;
+  border-radius:60px 60px 0 0;
+  background:linear-gradient(#152226,#05090b)
+}
+
+.mara{
+  left:12%
+}
+
+.survivor{
+  right:12%
+}
+
+.person:before{
+  content:"";
+  position:absolute;
+  width:70px;
+  height:70px;
+  left:50%;
+  top:-58px;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:#111b1d
+}
+
+.cutbox{
+  position:relative;
+  z-index:2;
+  width:min(780px,94vw);
+  padding:18px 22px;
+  border:1px solid rgba(205,239,220,.2);
+  border-radius:16px;
+  background:rgba(3,10,12,.9);
+  box-shadow:0 20px 80px rgba(0,0,0,.55)
+}
+
+.cutSpeaker{
+  color:#b9efc8;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.18em
+}
+
+.cutText{
+  margin-top:7px;
+  font-size:17px;
+  line-height:1.55
+}
+
+.skip{
+  margin-top:8px;
+  color:#637873;
+  font-size:9px;
+  letter-spacing:.12em
+}
